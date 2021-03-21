@@ -1,65 +1,51 @@
-#define TINY_GSM_MODEM_SIM800 //Tipo de modem que estamos usando
+#define TINY_GSM_MODEM_SIM800 
 #include <TinyGsmClient.h>
 #include <PubSubClient.h>
 #include <SPI.h>
+#include <DHT.h>
 
-//Tópico onde vamos postar os dados de temperatura e umidade 
-#define TOPIC "bridge/0001/test" 
-
-//URL do MQTT Server
+#define TOPIC "bridge/0001/test"
 #define MQTT_SERVER "broker.hivemq.com"
-
-//Porta padrão do MQTT
 #define MQTT_PORT 1883 
-
-//Intervalo entre os envios
 #define INTERVAL 10000
 
-gpio_num_t  doorSensorPIN = GPIO_NUM_12;  // Reed GPIO PIN:
-gpio_num_t GPIO_INPUT_IO_TRIGGER = doorSensorPIN;
 
-//Canal serial que vamos usar para comunicarmos com o modem.
+//Modem serial comunication
 HardwareSerial SerialGSM(1);
 TinyGsm modemGSM(SerialGSM);
 TinyGsmClient gsmClient(modemGSM);
-
-//Cliente MQTT, passamos a url do server, a porta
-//e o cliente GSM
+//MQTT Client
 PubSubClient client(MQTT_SERVER, MQTT_PORT, gsmClient);
-
-//Tempo em que o último envio/refresh foi feito
+//Last send/refresh time
 uint32_t lastTime = 0;
+//Temperature and door variables
+DHT dht(15, DHT11);
+float temperature; 
+const int doorPin = 18; 
+int doorStatus;
 
-float temperature = 25.0; //Variável onde iremos armazenar o valor da temperatura
-
-int doorState = digitalRead(doorSensorPIN);
 
 void setupGSM()
 {
   Serial.println("Configuracao do GSM");
-  //Inicializamos a serial onde está o modem
   SerialGSM.begin(9600, SERIAL_8N1, 4, 2, false);
   delay(6000);
-
-  //Mostra informação sobre o modem
   Serial.println(modemGSM.getModemInfo());
 
-  //Inicializa o modem
+  //Initiate modem
   if (!modemGSM.restart())
   {
     Serial.println("Restarting GSM Modem falhou");
     delay(3000);
-//    ESP.restart();
     return;
   } else {Serial.println("Modem restartou");}
 
-  //Espera pela rede
+  //Waits for network
   Serial.println("Tentando achar rede...");
   if (!modemGSM.waitForNetwork()) 
   {
-    Serial.println("Falha");
+    Serial.println("Falha em achar redes");
     delay(3000);
-    //ESP.restart();
     return;
   } else {Serial.println("Achou rede");}
 
@@ -67,11 +53,10 @@ void setupGSM()
   if (!modemGSM.gprsConnect("claro.com.br", "claro", "claro")) {
     Serial.println("GPRS Conexao falhou");
     delay(10000);
-    //ESP.restart();
     return;
-  } {Serial.println("CONECTOU NA GPRS");}
+  } {Serial.println("Conectou na GPRS");}
 
-  Serial.println("Setup GSM Success");
+  Serial.println("SETUP GSM SUCCESS");
 }
 
 void connectMQTTServer() {
@@ -79,7 +64,7 @@ void connectMQTTServer() {
   //Se conecta ao device que definimos
   if (client.connect("Bridge 0001")) {
     //Se a conexão foi bem sucedida
-    Serial.println("MQTT Connecteado");
+    Serial.println("MQTT Connectado");
   } else {
     //Se ocorreu algum erro
     Serial.print("error = ");
@@ -93,7 +78,7 @@ String createJsonString()
 {  
   String data = "{";
   data+="\"door\":";
-  data+=String(doorState, 2);
+  data+=String(doorStatus, 2);
   data+=",";
   data+="\"temperature\":";
   data+=String(temperature, 2); 
@@ -115,22 +100,24 @@ void publishMQTT()
 void setup() 
 {
   Serial.begin(115200);
-  setupGSM(); //Inicializa e configura o modem GSM
-  connectMQTTServer(); //Conectamos ao mqtt server
-  //Espera 2 segundos
+  dht.begin();
+  //setupGSM(); 
+  //connectMQTTServer();
   delay(2000);
-  pinMode(GPIO_INPUT_IO_TRIGGER,INPUT_PULLUP);
+  pinMode(doorPin, INPUT_PULLUP);
 }
 
 void loop() 
 {
-  //Se desconectou do server MQTT
-  if(!client.connected())
+  delay(1000);
+  doorStatus = digitalRead(doorPin);
+  temperature = dht.readTemperature();
+  Serial.println("Status: " + String(doorStatus, 2));
+  Serial.println("Status: " + String(temperature, 2));
+  /*if(!client.connected())
   {
-    //Mandamos conectar
     connectMQTTServer();
   }
-
    //Tempo decorrido desde o boot em milissegundos
   unsigned long now = millis();
 
@@ -141,6 +128,6 @@ void loop()
     publishMQTT();
     //Atualizamos o tempo em que foi feito o último envio
     lastTime = now;
-  }
+  }*/
 }
 
