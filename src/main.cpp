@@ -101,8 +101,8 @@ void setup()
 {
   Serial.begin(115200);
   dht.begin();
-  //setupGSM(); 
-  //connectMQTTServer();
+  setupGSM(); 
+  connectMQTTServer();
   delay(2000);
   pinMode(doorPin, INPUT_PULLUP);
 }
@@ -112,22 +112,17 @@ void loop()
   delay(1000);
   doorStatus = digitalRead(doorPin);
   temperature = dht.readTemperature();
-  Serial.println("Status: " + String(doorStatus, 2));
-  Serial.println("Status: " + String(temperature, 2));
-  /*if(!client.connected())
+  //Serial.println("Status: " + String(doorStatus, 2));
+  //Serial.println("Status: " + String(temperature, 2));
+  if(!client.connected())
   {
     connectMQTTServer();
   }
-   //Tempo decorrido desde o boot em milissegundos
   unsigned long now = millis();
-
-  //Se passou o intervalo de envio
   if(now - lastTime > INTERVAL)
   {
-    //Publicamos para o server mqtt
     publishMQTT();
-    //Atualizamos o tempo em que foi feito o último envio
     lastTime = now;
-  }*/
+  }
 }
 
