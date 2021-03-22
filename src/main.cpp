@@ -21,7 +21,7 @@ uint32_t lastTime = 0;
 //Temperature and door variables
 DHT dht(15, DHT11);
 float temperature; 
-const int doorPin = 18; 
+const int doorPin = 21; 
 int doorStatus;
 
 
@@ -50,7 +50,7 @@ void setupGSM()
   } else {Serial.println("Achou rede");}
 
   //Conecta à rede gprs (APN, usuário, senha)
-  if (!modemGSM.gprsConnect("claro.com.br", "claro", "claro")) {
+  if (!modemGSM.gprsConnect("zap.vivo.com.br", "vivo", "vivo")) {
     Serial.println("GPRS Conexao falhou");
     delay(10000);
     return;
