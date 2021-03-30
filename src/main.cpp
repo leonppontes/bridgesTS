@@ -6,6 +6,7 @@
 #include <EthernetUdp.h>
 #include "local_config.h"
 #include <DHT.h>
+#include <Arduino_SNMP_Manager.h>
 
 #define TOPIC "bridge/0001/test"
 #define MQTT_SERVER "broker.hivemq.com"
@@ -26,12 +27,31 @@ DHT dht(15, DHT11);
 float temperature; 
 const int doorPin = 21; 
 int doorStatus;
-const int NTP_PACKET_SIZE = 48;		// NTP time stamp is in the first 48 bytes of the message.
-byte packetBuffer[NTP_PACKET_SIZE];	// Buffer for both incoming and outgoing packets.
 
+IPAddress target(192, 168, 200, 1);
+const char *community = "public";
+const int snmpVersion = 1; // SNMP Version 1 = 0, SNMP Version 2 = 1
+const char *oidServiceCountInt = ".1.3.6.1.2.1.1.7.0";      // Integer sysServices
+int servicesResponse = 0;   //talvez precise mudar para long
+unsigned long pollStart = 0;
+unsigned long intervalBetweenPolls = 0;
 // A UDP instance to let us send and receive packets over UDP.
 EthernetUDP Udp;
+SNMPManager snmp = SNMPManager(community);             // Starts an SMMPManager to listen to replies to get-requests
+SNMPGet snmpRequest = SNMPGet(community, snmpVersion); // Starts an SMMPGet instance to send requests
+ValueCallback *callbackServices;   // Blank callback pointer for each OID
 
+void getSNMP()
+{
+  // Build a SNMP get-request add each OID to the request
+  
+  snmpRequest.addOIDPointer(callbackServices);
+  snmpRequest.setIP(Ethernet.localIP()); // IP of the listening MCU
+  snmpRequest.setUDP(&Udp);
+  snmpRequest.setRequestID(rand() % 5555);
+  snmpRequest.sendTo(target);
+  snmpRequest.clearOIDList();
+}
 
 void setupGSM()
 {
@@ -155,38 +175,14 @@ void prt_ethval(uint8_t refval) {
     }
 }
 
-// Send an NTP request to the time server at the given address (defined in local_conf.h).
-void sendNTPpacket(const char *address) {
-    // Set all bytes in the buffer to 0.
-    memset(packetBuffer, 0, NTP_PACKET_SIZE);
-
-    // Initialize values needed to form NTP request
-    // (see http://en.wikipedia.org/wiki/Network_Time_Protocol).
-    packetBuffer[0] = 0b11100011;      // LI, Version, Mode
-    packetBuffer[1] = 0;        // Stratum, or type of clock
-    packetBuffer[2] = 6;        // Polling Interval
-    packetBuffer[3] = 0xEC;     // Peer Clock Precision
-    // 8 bytes of zero for Root Delay & Root Dispersion
-    packetBuffer[12] = 49;
-    packetBuffer[13] = 0x4E;
-    packetBuffer[14] = 49;
-    packetBuffer[15] = 52;
-
-    // All NTP fields have been given values, now
-    // send a packet requesting a timestamp.
-    Udp.beginPacket(address, 123);      // NTP requests are to port 123
-    Udp.write(packetBuffer, NTP_PACKET_SIZE);
-    Udp.endPacket();
-}
-
 void setup() 
 {
   Serial.begin(115200);
-  /*dht.begin();
+  dht.begin();
   setupGSM(); 
   connectMQTTServer();
   delay(2000);
-  pinMode(doorPin, INPUT_PULLUP);*/
+  pinMode(doorPin, INPUT_PULLUP);
   Serial.println("\n\tIniciando config da porta RJ45\r\n");
   Ethernet.init(5);           // GPIO5 on the ESP32.
   WizReset();
@@ -220,81 +216,37 @@ void setup()
     } else {
         Serial.println(" OK");
     }
-
-    Udp.begin(localPort);
+  snmp.setUDP(&Udp); // give snmp a pointer to the UDP object
+  snmp.begin();      // start the SNMP Manager
+  // Get callbacks from creating a handler for each of the OID
+  callbackServices = snmp.addIntegerHandler(target, oidServiceCountInt, &servicesResponse);
 }
 
 void loop() 
 {
-/*  delay(1000);
+  delay(1000);
   doorStatus = digitalRead(doorPin);
   temperature = dht.readTemperature();
+  //colocar snmp aqui
+  
   if(!client.connected())
   {
     connectMQTTServer();
   }
+
+  snmp.loop(); //talvez n precise
+
   unsigned long now = millis();
   if(now - lastTime > INTERVAL)
   {
+    getSNMP();
+    Serial.printf("servicesResponse: %d\n", servicesResponse);
     publishMQTT();
     lastTime = now;
-  } */
-      sendNTPpacket(timeServer);  // Send an NTP packet to the time server.
-
+  }
     // Wait to see if a reply is available.
     delay(1000);
-    if (Udp.parsePacket()) {
-        // We've received a packet, read the data from it.
-        Udp.read(packetBuffer, NTP_PACKET_SIZE);        // Read the packet into the buffer.
-
-        // The timestamp starts at byte 40 of the received packet and is four bytes,
-        // or two words, long. First, extract the two words.
-        unsigned long highWord = word(packetBuffer[40], packetBuffer[41]);
-        unsigned long lowWord = word(packetBuffer[42], packetBuffer[43]);
-
-        // Next, combine the four bytes (two words) into a long integer.
-        // This is NTP time (seconds since Jan 1 1900).
-        unsigned long secsSince1900 = highWord << 16 | lowWord;
-        Serial.print("Seconds since Jan 1 1900 = ");
-        Serial.println(secsSince1900);
-
-        // Now convert NTP time into everyday time.
-        Serial.print("Unix time = ");
-        // Unix time starts on Jan 1 1970. In seconds, that's 2208988800.
-        const unsigned long seventyYears = 2208988800UL;
-        // Subtract seventy years.
-        unsigned long epoch = secsSince1900 - seventyYears;
-        // ...and then print Unix time.
-        Serial.println(epoch);
-
-
-        // Print the hour, minute and second.
-        Serial.print("The UTC time is ");       // UTC is the time at Greenwich Meridian (GMT).
-        Serial.print((epoch % 86400L) / 3600);  // Print the hour (86400 equals secs per day).
-        Serial.print(':');
-        if (((epoch % 3600) / 60) < 10) {
-            // For the first 10 minutes of each hour, insert a leading '0' character.
-            Serial.print('0');
-        }
-        Serial.print((epoch % 3600) / 60);      // Print the minute (3600 equals secs per minute).
-        Serial.print(':');
-        if ((epoch % 60) < 10) {
-            // For the first 10 seconds of each minute, insert a leading '0' character.
-            Serial.print('0');
-        }
-        Serial.println(epoch % 60);     // Print the second.
-    }
-
-    // Wait for a while before asking for the time again.
-    Serial.print("Sleeping: ");
-    for (uint8_t i = 0; i < SLEEP_SECS; i++) {
-        delay(1000);			// One second delay "ticks".
-	Serial.print(".");
-    }
-    Serial.println("\n\r---\n\r");
-
+    
     // You only need to call maintain if you're using DHCP.
     // Ethernet.maintain();
 }
-
-
