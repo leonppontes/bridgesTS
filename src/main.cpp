@@ -28,13 +28,11 @@ float temperature;
 const int doorPin = 21; 
 int doorStatus;
 
-IPAddress target(192, 168, 200, 1);
+IPAddress target(10, 175, 134, 152);
 const char *community = "public";
-const int snmpVersion = 1; // SNMP Version 1 = 0, SNMP Version 2 = 1
-const char *oidServiceCountInt = ".1.3.6.1.2.1.1.7.0";      // Integer sysServices
+const int snmpVersion = 0; // SNMP Version 1 = 0, SNMP Version 2 = 1
+const char *oidServiceCountInt = ".1.3.6.1.4.1.1773.1.3.208.2.2.3.0";      // Integer sysServices
 int servicesResponse = 0;   //talvez precise mudar para long
-unsigned long pollStart = 0;
-unsigned long intervalBetweenPolls = 0;
 // A UDP instance to let us send and receive packets over UDP.
 EthernetUDP Udp;
 SNMPManager snmp = SNMPManager(community);             // Starts an SMMPManager to listen to replies to get-requests
@@ -99,18 +97,22 @@ void connectMQTTServer() {
     Serial.print("error = ");
     Serial.println(client.state());
     delay(10000);
-    ESP.restart();
+    //ESP.restart();
   }
 }
 
 String createJsonString() 
-{  
+{ 
+  float nivel =  (servicesResponse/1.00) - 256;
   String data = "{";
   data+="\"door\":";
   data+=String(doorStatus, 2);
   data+=",";
   data+="\"temperature\":";
-  data+=String(temperature, 2); 
+  data+=String(temperature, 2);
+  data+=",";
+  data+="\"nivel\":";
+  data+=String(nivel, 2); 
   data+="}";
   return data;
 }
@@ -240,7 +242,9 @@ void loop()
   if(now - lastTime > INTERVAL)
   {
     getSNMP();
-    Serial.printf("servicesResponse: %d\n", servicesResponse);
+    /*Serial.print("Nível de recepção: ");
+    Serial.print(servicesResponse-256);
+    Serial.println(" dB");*/
     publishMQTT();
     lastTime = now;
   }
