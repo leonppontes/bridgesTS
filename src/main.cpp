@@ -8,8 +8,10 @@
 #include <DHT.h>
 #include <Arduino_SNMP_Manager.h>
 
-#define TOPIC "bridge/0001/test"
-#define MQTT_SERVER "broker.hivemq.com"
+#define TOKEN "BBFF-tkFmFn3Ie1OdwGbL0FznbTw5tT5Lx7"
+#define TOPIC "v1.6/devices/bridgets"
+#define DEVICE_ID "606df16f1d84727f0d3a660a"
+#define MQTT_SERVER "mqtt://things.ubidots.com"
 #define MQTT_PORT 1883 
 #define INTERVAL 10000
 
@@ -111,7 +113,7 @@ String createJsonString()
   data+="\"temperature\":";
   data+=String(temperature, 2);
   data+=",";
-  data+="\"nivel\":";
+  data+="\"level\":";
   data+=String(nivel, 2); 
   data+="}";
   return data;
