@@ -91,7 +91,7 @@ void setupGSM()
 void connectMQTTServer() {
   Serial.println("Conectando ao MQTT Server...");
   //Se conecta ao device que definimos
-  if (client.connect("Bridge 0001")) {
+  if (client.connect(DEVICE_ID, TOKEN, "")) {
     //Se a conexão foi bem sucedida
     Serial.println("MQTT Connectado");
   } else {
