@@ -9,9 +9,9 @@
 #include <Arduino_SNMP_Manager.h>
 
 #define TOKEN "BBFF-tkFmFn3Ie1OdwGbL0FznbTw5tT5Lx7"
-#define TOPIC "v1.6/devices/bridgets"
+#define TOPIC "/v1.6/devices/bridgets"
 #define DEVICE_ID "606df16f1d84727f0d3a660a"
-#define MQTT_SERVER "mqtt://things.ubidots.com"
+#define MQTT_SERVER "things.ubidots.com"
 #define MQTT_PORT 1883 
 #define INTERVAL 10000
 
@@ -221,9 +221,12 @@ void setup()
         Serial.println(" OK");
     }
   snmp.setUDP(&Udp); // give snmp a pointer to the UDP object
+  Serial.println(" UDP ok. Indo para o snmp begin");
   snmp.begin();      // start the SNMP Manager
+  Serial.println("snmp begin foi. Agora vai pegar o dado do ird");
   // Get callbacks from creating a handler for each of the OID
   callbackServices = snmp.addIntegerHandler(target, oidServiceCountInt, &servicesResponse);
+  Serial.println("pegou dado do ird");
 }
 
 void loop() 
