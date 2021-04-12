@@ -55,7 +55,7 @@ void getSNMP()
 
 void setupGSM()
 {
-  Serial.println("Configuracao do GSM");
+  Serial.println("GSM configuration started");
   SerialGSM.begin(9600, SERIAL_8N1, 4, 2, false);
   delay(4000);
   Serial.println(modemGSM.getModemInfo());
@@ -63,37 +63,37 @@ void setupGSM()
   //Initiate modem
   if (!modemGSM.restart())
   {
-    Serial.println("Restarting GSM Modem falhou");
+    Serial.println("Restarting GSM Modem failure");
     delay(2000);
     //ESP.restart();
     return;
-  } else {Serial.println("Modem restartou");}
+  } else {Serial.println("Modem restarted");}
 
   //Waits for network
-  Serial.println("Tentando achar rede...");
+  Serial.println("Tryng to find network...");
   if (!modemGSM.waitForNetwork()) 
   {
-    Serial.println("Falha em achar redes");
+    Serial.println("Can't locate network");
     delay(3000);
     return;
-  } else {Serial.println("Achou rede");}
+  } else {Serial.println("Found network");}
 
   //Conecta à rede gprs (APN, usuário, senha)
   if (!modemGSM.gprsConnect("zap.vivo.com.br", "vivo", "vivo")) {
-    Serial.println("GPRS Conexao falhou");
+    Serial.println("GPRS connection failure");
     delay(10000);
     return;
-  } {Serial.println("Conectou na GPRS");}
+  } {Serial.println("GPRS connection success");}
 
   Serial.println("SETUP GSM SUCCESS");
 }
 
 void connectMQTTServer() {
-  Serial.println("Conectando ao MQTT Server...");
+  Serial.println("Connecting to the MQTT server...");
   //Se conecta ao device que definimos
   if (client.connect(DEVICE_ID, TOKEN, "")) {
     //Se a conexão foi bem sucedida
-    Serial.println("MQTT Connectado");
+    Serial.println("MQTT Connected");
   } else {
     //Se ocorreu algum erro
     Serial.print("error = ");
@@ -187,7 +187,7 @@ void setup()
   connectMQTTServer();
   delay(2000);
   pinMode(doorPin, INPUT_PULLUP);
-  Serial.println("\n\tIniciando config da porta RJ45\r\n");
+  Serial.println("\n\tStarting W5500 configuration\r\n");
   Ethernet.init(5);           // GPIO5 on the ESP32.
   WizReset();
   Serial.println("Starting ETHERNET connection...");
@@ -221,12 +221,9 @@ void setup()
         Serial.println(" OK");
     }
   snmp.setUDP(&Udp); // give snmp a pointer to the UDP object
-  Serial.println(" UDP ok. Indo para o snmp begin");
   snmp.begin();      // start the SNMP Manager
-  Serial.println("snmp begin foi. Agora vai pegar o dado do ird");
   // Get callbacks from creating a handler for each of the OID
   callbackServices = snmp.addIntegerHandler(target, oidServiceCountInt, &servicesResponse);
-  Serial.println("pegou dado do ird");
 }
 
 void loop() 
@@ -234,22 +231,18 @@ void loop()
   delay(1000);
   doorStatus = digitalRead(doorPin);
   temperature = dht.readTemperature();
-  //colocar snmp aqui
   
   if(!client.connected())
   {
     connectMQTTServer();
   }
 
-  snmp.loop(); //talvez n precise
+  snmp.loop(); 
 
   unsigned long now = millis();
   if(now - lastTime > INTERVAL)
   {
     getSNMP();
-    /*Serial.print("Nível de recepção: ");
-    Serial.print(servicesResponse-256);
-    Serial.println(" dB");*/
     publishMQTT();
     lastTime = now;
   }
