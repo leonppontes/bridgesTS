@@ -14,13 +14,13 @@ uint8_t eth_MAC[] = { 0x02, 0xF0, 0x0D, 0xBE, 0xEF, 0x01 };
  * on your LAN.  These values must match YOUR SPECIFIC LAN.  The "eth_IP"
  * is the IP address for this gateway's ETHERNET port.
  */
-IPAddress eth_IP(10, 175, 134, 150);		// *** CHANGE THIS to something relevant for YOUR LAN. ***
+IPAddress eth_IP(192, 168, 12, 25);		// *** CHANGE THIS to something relevant for YOUR LAN. ***
 IPAddress eth_MASK(255, 255, 255, 0);		// Subnet mask.
 IPAddress eth_DNS(8, 8, 8, 8);		// *** CHANGE THIS to match YOUR DNS server.           ***
-IPAddress eth_GW(10, 175, 134, 129);		// *** CHANGE THIS to match YOUR Gateway (router).     ***
+IPAddress eth_GW(192, 168, 12, 1);		// *** CHANGE THIS to match YOUR Gateway (router).     ***
 
 
-#define RESET_P	26				// Tie the Wiz820io/W5500 reset pin to ESP32 GPIO26 pin.
+#define RESET_P	22				// Tie the Wiz820io/W5500 reset pin to ESP32 GPIO26 pin.
 
 const uint16_t localPort = 55432;		// Local port for UDP packets.
 

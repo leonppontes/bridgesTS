@@ -30,7 +30,7 @@ float temperature;
 const int doorPin = 21; 
 int doorStatus;
 
-IPAddress target(10, 175, 134, 152);
+IPAddress target(192, 168, 12, 24);
 const char *community = "public";
 const int snmpVersion = 0; // SNMP Version 1 = 0, SNMP Version 2 = 1
 const char *oidServiceCountInt = ".1.3.6.1.4.1.1773.1.3.208.2.2.3.0";      // Integer sysServices
@@ -79,7 +79,7 @@ void setupGSM()
   } else {Serial.println("Found network");}
 
   //Conecta à rede gprs (APN, usuário, senha)
-  if (!modemGSM.gprsConnect("zap.vivo.com.br", "vivo", "vivo")) {
+  if (!modemGSM.gprsConnect("claro.com.br", "claro", "claro")) {
     Serial.println("GPRS connection failure");
     delay(10000);
     return;
