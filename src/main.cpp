@@ -65,7 +65,7 @@ void setupGSM()
   {
     Serial.println("Restarting GSM Modem failure");
     delay(2000);
-    //ESP.restart();
+    ESP.restart();
     return;
   } else {Serial.println("Modem restarted");}
 
@@ -75,6 +75,7 @@ void setupGSM()
   {
     Serial.println("Can't locate network");
     delay(3000);
+    ESP.restart();
     return;
   } else {Serial.println("Found network");}
 
@@ -82,6 +83,7 @@ void setupGSM()
   if (!modemGSM.gprsConnect("claro.com.br", "claro", "claro")) {
     Serial.println("GPRS connection failure");
     delay(10000);
+    ESP.restart();
     return;
   } {Serial.println("GPRS connection success");}
 
@@ -99,7 +101,7 @@ void connectMQTTServer() {
     Serial.print("error = ");
     Serial.println(client.state());
     delay(10000);
-    //ESP.restart();
+    ESP.restart();
   }
 }
 
